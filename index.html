@@ -56,14 +56,14 @@
 </div>
 
 <script>
-  // URL Apps Script Kakak nanti akan dimasukkan di sini
-  const WEB_APP_URL = "GANTI_DENGAN_URL_WEB_APP_BARU";
+  // Link Web App URL Google Apps Script Kakak sudah terpasang di sini
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzAcgx7hu8Pceeino76Jqc0qzZggxR7Bh8TTbQhsSmQG13aQSIN9waW88XzLhg-JehSbA/exec"
 
   let soalData = [];
   let jawabanSiswa = {};
 
   async function mulaiUjian() {
-    const nama = document.getElementById('namaSisna').value || document.getElementById('namaSiswa').value.trim();
+    const nama = document.getElementById('namaSiswa').value.trim();
     const kelas = document.getElementById('kelasSiswa').value;
 
     if (!nama) {
@@ -80,7 +80,10 @@
     document.getElementById('daftar-soal').innerHTML = "<p>Sedang mengambil soal dari database, mohon tunggu sebentar...</p>";
 
     try {
-      let response = await fetch(WEB_APP_URL + "?action=getSoal");
+      let response = await fetch(WEB_APP_URL + "?action=getSoal", {
+        redirect: "follow",
+        mode: "cors"
+      });
       let data = await response.json();
       soalData = data;
 
@@ -104,7 +107,28 @@
       }
       document.getElementById('daftar-soal').innerHTML = htmlSoal;
     } catch (err) {
-      document.getElementById('daftar-soal').innerHTML = "<p style='color:red;'>Gagal memuat soal. Pastikan deployment Apps Script sudah benar.</p>";
+      try {
+        let resFallback = await fetch(WEB_APP_URL + "?action=getSoal");
+        let dataFallback = await resFallback.json();
+        soalData = dataFallback;
+        let htmlSoal = "";
+        dataFallback.forEach((item, index) => {
+          htmlSoal += `
+            <div class="question-box">
+              <p><b>Soal ${index + 1}:</b> ${item.pertanyaan}</p>
+              <div class="options">
+                <label><input type="radio" name="soal_${item.id}" value="A" onclick="simpanPilihan('${item.id}', 'A')"> A. ${item.opsiA}</label>
+                <label><input type="radio" name="soal_${item.id}" value="B" onclick="simpanPilihan('${item.id}', 'B')"> B. ${item.opsiB}</label>
+                <label><input type="radio" name="soal_${item.id}" value="C" onclick="simpanPilihan('${item.id}', 'C')"> C. ${item.opsiC}</label>
+                <label><input type="radio" name="soal_${item.id}" value="D" onclick="simpanPilihan('${item.id}', 'D')"> D. ${item.opsiD}</label>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('daftar-soal').innerHTML = htmlSoal;
+      } catch (e) {
+        document.getElementById('daftar-soal').innerHTML = "<p style='color:red;'>Gagal memuat soal. Pastikan koneksi internet stabil.</p>";
+      }
     }
   }
 
